@@ -47,9 +47,9 @@ sub PopulateTable($)
 
 
 
-sub Transaction($$)
+sub Transaction($$$)
 {
-    my ( $sleep_time, $isolation_level ) = @_;
+    my ( $transactions_count, $sleep_time, $isolation_level ) = @_;
 
     my $select_query = "select count(*) from foo";
     my $update_query ="update foo set bar=? where id = ?";
@@ -75,7 +75,7 @@ sub Transaction($$)
             $sth->execute();
             sleep( $sleep_time );
             $sth = $dbh->prepare( $update_query );
-            $sth->execute("D", int(rand(1000)));
+            $sth->execute("D", int(rand( $transactions_count )) + 1 );
             sleep( $sleep_time );
             $sth = $dbh->prepare( $select_query );
             $sth->execute();
@@ -118,7 +118,7 @@ sub Handler($$$)
     for ( my $forks=0; $forks < $transactions_count; $forks++ )
     {
         $pm->start and next;
-        my ( $failed, $retries ) = Transaction( $sleep_time, $isolation_level );
+        my ( $failed, $retries ) = Transaction( $transactions_count, $sleep_time, $isolation_level );
         $pm->finish(0, { failed => $failed, retries => $retries });
     }
 
