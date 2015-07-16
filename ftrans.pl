@@ -24,7 +24,6 @@ sub PopulateTable($)
 
     try
     {
-
         my $sth = $dbh->prepare( $truncate_query );
         $sth->execute();
 
@@ -67,20 +66,23 @@ sub Transaction($$)
 
     my $curr_time = time();
 
+    srand();
+
     while( time() < $curr_time + 5 )
     {
         try
         {
             $transactions_count += 1;
             my $id = int( rand( $rows_count ) ) + 1;
+
             my $sth = $dbh->prepare("set transaction isolation level $isolation_level");
             $sth->execute();
-            #$sth = $dbh->prepare( $select_query );
-            #$sth->execute();
+            $sth = $dbh->prepare( $select_query );
+            $sth->execute();
             $sth = $dbh->prepare( $update_query );
             $sth->execute("D", $id);
-            #$sth = $dbh->prepare( $select_query );
-            #$sth->execute();
+            $sth = $dbh->prepare( $select_query );
+            $sth->execute();
             $dbh->commit();
         }
         catch
@@ -138,13 +140,14 @@ sub Main
 
     try
     {
-        PopulateTable( 10 );
+        #PopulateTable( 10 );
+
         for ( @isolation_levels )
         {
-
+            #next if ( $_ eq "serializable" );
             my ( $transactions_count, $succeed_transactions_count, $retries_count ) = Handler( 10, $_ );
             printf "%s\t%d\t%d\t%d\n", $_, $transactions_count, $succeed_transactions_count, $retries_count;
-
+            last;
         }
     }
     catch
@@ -152,6 +155,5 @@ sub Main
         warn "Error: $_";
     };
 }
-
 
 Main();
